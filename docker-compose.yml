@@ -1,0 +1,135 @@
+services:
+  # Next.js Application Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DATABASE_URL: ${DATABASE_URL}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_TYPE=${DATABASE_TYPE}
+      - DATABASE_URL=${DATABASE_URL}
+      - NEXT_TELEMETRY_DISABLED=1
+    volumes:
+      # Mount data directory for SQLite persistence (when using SQLite)
+      - ./data:/app/data
+      # Mount logs directory
+      - ./logs:/app/logs
+    depends_on:
+      # Only depend on database services when not using SQLite
+      postgres:
+        condition: service_healthy
+        required: false
+      mysql:
+        condition: service_healthy
+        required: false
+    restart: unless-stopped
+    networks:
+      - vocab-network
+
+  # PostgreSQL Database Service
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-vocabmaster}
+      - POSTGRES_USER=${POSTGRES_USER:-vocabuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-vocabbuddy2024}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init/postgres:/docker-entrypoint-initdb.d
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vocabuser} -d ${POSTGRES_DB:-vocabmaster}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - vocab-network
+    # Only start this service when explicitly requested
+    profiles: ["postgres"]
+
+  # MySQL Database Service
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
+      - MYSQL_DATABASE=${MYSQL_DB:-vocabmaster}
+      - MYSQL_USER=${MYSQL_USER:-vocabuser}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-vocabbuddy2024}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init/mysql:/docker-entrypoint-initdb.d
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - vocab-network
+    # Only start this service when explicitly requested
+    profiles: ["mysql"]
+
+  # SQLPad Database Management Service
+  sqlpad:
+    image: sqlpad/sqlpad:latest
+    environment:
+      - SQLPAD_ADMIN=${SQLPAD_ADMIN:-admin@sqlpad.com}
+      - SQLPAD_ADMIN_PASSWORD=${SQLPAD_ADMIN_PASSWORD:-admin}
+      - SQLPAD_APP_LOG_LEVEL=${SQLPAD_LOG_LEVEL:-info}
+      - SQLPAD_PORT=3000
+      - SQLPAD_CONNECTIONS__postgres__name=PostgreSQL
+      - SQLPAD_CONNECTIONS__postgres__driver=postgres
+      - SQLPAD_CONNECTIONS__postgres__host=postgres
+      - SQLPAD_CONNECTIONS__postgres__port=5432
+      - SQLPAD_CONNECTIONS__postgres__database=${POSTGRES_DB:-vocabmaster}
+      - SQLPAD_CONNECTIONS__postgres__username=${POSTGRES_USER:-vocabuser}
+      - SQLPAD_CONNECTIONS__postgres__password=${POSTGRES_PASSWORD:-vocabbuddy2024}
+      - SQLPAD_CONNECTIONS__mysql__name=MySQL
+      - SQLPAD_CONNECTIONS__mysql__driver=mysql
+      - SQLPAD_CONNECTIONS__mysql__host=mysql
+      - SQLPAD_CONNECTIONS__mysql__port=3306
+      - SQLPAD_CONNECTIONS__mysql__database=${MYSQL_DB:-vocabmaster}
+      - SQLPAD_CONNECTIONS__mysql__username=${MYSQL_USER:-vocabuser}
+      - SQLPAD_CONNECTIONS__mysql__password=${MYSQL_PASSWORD:-vocabbuddy2024}
+    ports:
+      - "${SQLPAD_PORT:-3001}:3000"
+    volumes:
+      - sqlpad_data:/var/lib/sqlpad
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
+      mysql:
+        condition: service_healthy
+        required: false
+    restart: unless-stopped
+    networks:
+      - vocab-network
+    # Start with postgres or mysql profiles
+    profiles: ["postgres", "mysql"]
+
+volumes:
+  postgres_data:
+    driver: local
+  mysql_data:
+    driver: local
+  sqlpad_data:
+    driver: local
+
+networks:
+  vocab-network:
+    driver: bridge
+
+# Profiles for different database configurations:
+# - default: SQLite only (no external database containers)
+# - postgres: PostgreSQL database
+# - mysql: MySQL database
+# - all: Both PostgreSQL and MySQL (for testing)

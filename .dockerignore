@@ -1,0 +1,63 @@
+# Dependencies
+node_modules
+.npm
+
+# Build outputs
+.next
+out
+
+# Development files
+.git
+.gitignore
+README.md
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Testing
+coverage
+.nyc_output
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Temporary files
+tmp
+temp
+
+# Database files (except for SQLite data in production)
+data/*.db
+data/*.db-*
+!data/vocab-master.db
+!data/vocab-master.db-*
+
+# Ignore development database
+data/vocab-master-dev.db
+
+# Configuration files that shouldn't be in containers
+.env.example
+.eslintrc.json
+.prettierrc

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci",
+  "regions": ["iad1"],
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  },
+  "env": {
+    "DATABASE_TYPE": "supabase"
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "develop": false
+    }
+  },
+  "github": {
+    "silent": true,
+    "autoJobCancelation": true
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0"
+        }
+      ]
+    }
+  ],
+  "rewrites": []
+}
