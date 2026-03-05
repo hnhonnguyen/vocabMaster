@@ -68,4 +68,4 @@ restored_hash = get_hash('restored.tar.gz')
 
 print(f"Original:  {original_hash}")
 print(f"Restored:  {restored_hash}")
-print(f"\n{'✓ SUCCESS: Files are identical!' if original_hash == restored_hash else '✗ ERROR: Files differ!'}")
+# print(f"\n{'✓ SUCCESS: Files are identical!' if original_hash == restored_hash else '✗ ERROR: Files differ!'}")
