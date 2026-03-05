@@ -1,6 +1,6 @@
 # Deploy Workflow - Supabase Migrations & Full Stack
 # Runs Supabase migrations and coordinates full deployment
-# Triggered on push to main branch
+# Triggered on push to main branch when supabase/ changes
 
 name: Deploy
 
@@ -23,11 +23,6 @@ on:
         default: true
         type: boolean
 
-env:
-  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-  SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-
 jobs:
   # Run Supabase migrations first
   supabase-migrate:
@@ -36,7 +31,10 @@ jobs:
     if: |
       github.event_name == 'push' ||
       (github.event_name == 'workflow_dispatch' && inputs.run_migrations)
-    
+
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -47,16 +45,13 @@ jobs:
           version: latest
 
       - name: Link Supabase project
-        run: |
-          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
 
       - name: Run database migrations
-        run: |
-          supabase db push --password ${{ secrets.SUPABASE_DB_PASSWORD }} --debug
+        run: supabase db push --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
 
       - name: Verify migration status
-        run: |
-          supabase migration list
+        run: supabase migration list
 
   # Deploy to Vercel after migrations (if needed)
   vercel-deploy:
@@ -67,15 +62,16 @@ jobs:
       always() &&
       (needs.supabase-migrate.result == 'success' || needs.supabase-migrate.result == 'skipped') &&
       (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy_vercel))
-    
+
     environment:
       name: production
       url: ${{ steps.deploy.outputs.url }}
-    
+
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-    
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -90,20 +86,20 @@ jobs:
         run: npm install -g vercel@latest
 
       - name: Pull Vercel environment
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Build project
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel build --prod --token "$VERCEL_TOKEN"
 
       - name: Deploy to Vercel
         id: deploy
         run: |
-          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          url=$(vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN")
           echo "url=$url" >> $GITHUB_OUTPUT
 
       - name: Deployment summary
         run: |
-          echo "## 🚀 Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Production URL:** ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -116,13 +112,23 @@ jobs:
     runs-on: ubuntu-latest
     needs: [supabase-migrate, vercel-deploy]
     if: always()
-    
+
     steps:
       - name: Check deployment status
         run: |
-          if [ "${{ needs.vercel-deploy.result }}" == "success" ]; then
-            echo "✅ Deployment successful!"
+          migrate_result="${{ needs.supabase-migrate.result }}"
+          deploy_result="${{ needs.vercel-deploy.result }}"
+
+          echo "Migration: $migrate_result"
+          echo "Vercel Deploy: $deploy_result"
+
+          if [ "$deploy_result" == "success" ]; then
+            echo "Deployment successful!"
+          elif [ "$deploy_result" == "skipped" ] && [ "$migrate_result" == "success" ]; then
+            echo "Migrations applied, Vercel deploy skipped"
           else
-            echo "❌ Deployment failed or was skipped"
+            echo "Deployment failed or was skipped"
+            echo "Migration result: $migrate_result"
+            echo "Deploy result: $deploy_result"
             exit 1
           fi

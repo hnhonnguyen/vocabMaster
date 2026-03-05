@@ -65,10 +65,12 @@ jobs:
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: nextjs-build
           path: .next/
           retention-days: 1
+          if-no-files-found: ignore
 
   # Optional: Add test job when tests are implemented
   # test:
