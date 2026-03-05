@@ -31,7 +31,7 @@ env:
   # Vercel Environment Variables (configured automatically during deployment)
   DATABASE_TYPE: ${{ secrets.DATABASE_TYPE }}
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  
+
 jobs:
   # Check if CI was successful and determine what to deploy
   check-ci-status:
@@ -135,6 +135,18 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
+      - name: Configure Vercel Environment Variables
+        run: |
+          # Set DATABASE_TYPE environment variable
+          echo "Setting DATABASE_TYPE environment variable..."
+          vercel env add DATABASE_TYPE preview --token "$VERCEL_TOKEN" <<< "$DATABASE_TYPE" || true
+          
+          # Set DATABASE_URL environment variable
+          echo "Setting DATABASE_URL environment variable..."
+          vercel env add DATABASE_URL preview --token "$VERCEL_TOKEN" <<< "$DATABASE_URL" || true
+          
+          echo "Environment variables configured successfully"
+
       - name: Pull Vercel environment information
         run: vercel pull --yes --environment=preview --token "$VERCEL_TOKEN"
 
@@ -187,6 +199,18 @@ jobs:
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
+        
+      - name: Configure Vercel Environment Variables
+        run: |
+          # Set DATABASE_TYPE environment variable
+          echo "Setting DATABASE_TYPE environment variable..."
+          vercel env add DATABASE_TYPE preview --token "$VERCEL_TOKEN" <<< "$DATABASE_TYPE" || true
+          
+          # Set DATABASE_URL environment variable
+          echo "Setting DATABASE_URL environment variable..."
+          vercel env add DATABASE_URL preview --token "$VERCEL_TOKEN" <<< "$DATABASE_URL" || true
+          
+          echo "Environment variables configured successfully"
 
       - name: Pull Vercel environment information
         run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
