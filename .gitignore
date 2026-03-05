@@ -60,3 +60,5 @@ data/
 
 # local setup scripts
 setup.bat
+
+.vercel

@@ -34,8 +34,8 @@ jobs:
     name: Supabase Migrations
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'push' && contains(github.event.head_commit.modified, 'supabase/')) ||
-      (github.event_name == 'workflow_dispatch' && inputs.run_migrations == 'true')
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_migrations)
     
     steps:
       - name: Checkout repository
@@ -66,7 +66,7 @@ jobs:
     if: |
       always() &&
       (needs.supabase-migrate.result == 'success' || needs.supabase-migrate.result == 'skipped') &&
-      (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy_vercel == 'true'))
+      (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy_vercel))
     
     environment:
       name: production

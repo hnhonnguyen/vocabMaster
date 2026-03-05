@@ -66,7 +66,7 @@ npm install -g supabase
 
 # Login and link project
 supabase login
-supabase link --project-ref <your-project-ref>
+supabase link --project-ref hutylyejedfbehuchxyb
 ```
 
 ### 3. Set Environment Variables in Vercel
@@ -75,7 +75,7 @@ Go to Vercel Dashboard → Project → Settings → Environment Variables:
 
 ```
 DATABASE_TYPE = supabase
-DATABASE_URL = postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?pgbouncer=true
+DATABASE_URL = postgresql://postgres.hutylyejedfbehuchxyb:[password]@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true
 ```
 
 ### 4. Run Initial Migration
