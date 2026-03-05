@@ -1,14 +1,13 @@
 # Continuous Deployment Workflow
 # Consolidated workflow for Vercel deployments and Supabase migrations
-# Runs only after CI workflow completes successfully
+# Runs on pushes to main, pull requests targeting main, and manual dispatch
 
 name: CD
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types:
-      - completed
+  push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
     inputs:
@@ -33,13 +32,10 @@ env:
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
 jobs:
-  # Check if CI was successful and determine what to deploy
+  # Determine what to deploy based on event type
   check-ci-status:
     name: Check CI Status
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     outputs:
       should_migrate: ${{ steps.check.outputs.should_migrate }}
       is_pr: ${{ steps.check.outputs.is_pr }}
@@ -51,33 +47,19 @@ jobs:
       - name: Determine deployment type
         id: check
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            # Manual dispatch - check if supabase files changed in latest commit
-            if git diff --name-only HEAD~1 HEAD | grep -q "^supabase/"; then
-              echo "should_migrate=true" >> $GITHUB_OUTPUT
-            else
-              echo "should_migrate=false" >> $GITHUB_OUTPUT
-            fi
-            echo "is_pr=false"
-            echo "pr_number="
+          EVENT="${{ github.event_name }}"
+          if [ "$EVENT" == "pull_request" ]; then
+            echo "is_pr=true" >> $GITHUB_OUTPUT
+            echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
           else
-            # Workflow run from CI
-            EVENT_TYPE="${{ github.event.workflow_run.event }}"
-            if [ "$EVENT_TYPE" == "pull_request" ]; then
-              echo "is_pr=true" >> $GITHUB_OUTPUT
-              # Extract PR number from the workflow run
-              PR_NUMBER=$(echo '${{ toJson(github.event.workflow_run.pull_requests) }}' | jq -r '.[0].number // empty')
-              echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-            else
-              echo "is_pr=false" >> $GITHUB_OUTPUT
-              echo "pr_number=" >> $GITHUB_OUTPUT
-            fi
-            # Check if supabase files changed
-            if git diff --name-only HEAD~1 HEAD | grep -q "^supabase/"; then
-              echo "should_migrate=true" >> $GITHUB_OUTPUT
-            else
-              echo "should_migrate=false" >> $GITHUB_OUTPUT
-            fi
+            echo "is_pr=false" >> $GITHUB_OUTPUT
+            echo "pr_number=" >> $GITHUB_OUTPUT
+          fi
+          # Check if supabase files changed in the HEAD commit
+          if git diff-tree --no-commit-id --name-only -r HEAD | grep -q "^supabase/"; then
+            echo "should_migrate=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_migrate=false" >> $GITHUB_OUTPUT
           fi
 
   # Run Supabase migrations first (only on main branch pushes, not PRs)
@@ -87,8 +69,10 @@ jobs:
     needs: [check-ci-status]
     if: |
       needs.check-ci-status.outputs.is_pr == 'false' &&
-      (github.event_name == 'workflow_dispatch' && inputs.run_migrations ||
-       (github.event_name == 'workflow_run' && needs.check-ci-status.outputs.should_migrate == 'true'))
+      (
+        (github.event_name == 'workflow_dispatch' && inputs.run_migrations) ||
+        (github.event_name == 'push' && needs.check-ci-status.outputs.should_migrate == 'true')
+      )
 
     steps:
       - name: Checkout repository
@@ -115,8 +99,10 @@ jobs:
     needs: [check-ci-status]
     if: |
       needs.check-ci-status.outputs.is_pr == 'true' &&
-      (github.event_name == 'workflow_dispatch' && inputs.deploy_vercel ||
-       github.event_name == 'workflow_run')
+      (
+        (github.event_name == 'workflow_dispatch' && inputs.deploy_vercel) ||
+        github.event_name == 'pull_request'
+      )
 
     environment:
       name: preview
@@ -180,8 +166,10 @@ jobs:
       always() &&
       needs.check-ci-status.outputs.is_pr == 'false' &&
       (needs.supabase-migrate.result == 'success' || needs.supabase-migrate.result == 'skipped') &&
-      (github.event_name == 'workflow_dispatch' && inputs.deploy_vercel ||
-       github.event_name == 'workflow_run')
+      (
+        (github.event_name == 'workflow_dispatch' && inputs.deploy_vercel) ||
+        github.event_name == 'push'
+      )
 
     environment:
       name: production
