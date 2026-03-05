@@ -14,6 +14,13 @@ Add these secrets in your GitHub repository: **Settings → Secrets and variable
 | `VERCEL_ORG_ID` | Your Vercel team/org ID | Run `vercel link` locally, check `.vercel/project.json` |
 | `VERCEL_PROJECT_ID` | Your Vercel project ID | Run `vercel link` locally, check `.vercel/project.json` |
 
+### Application Environment Variables
+
+| Secret Name | Description | Example Value |
+|-------------|-------------|---------------|
+| DATABASE_TYPE | Database backend type | supabase |
+| DATABASE_URL | Supabase connection string | postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?pgbouncer=true |
+
 ### Supabase Secrets
 
 | Secret Name | Description | How to Get |
@@ -132,6 +139,7 @@ You can manually trigger deployments using the workflow dispatch:
 ### Vercel deployment fails
 - Check `VERCEL_TOKEN` is valid and not expired
 - Ensure `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` are correct
+- Verify `DATABASE_TYPE` and `DATABASE_URL` secrets are set in GitHub repository settings
 - Verify environment variables are set in Vercel dashboard
 
 ### Supabase migration fails
