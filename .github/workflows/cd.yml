@@ -24,19 +24,39 @@ on:
         type: boolean
 
 env:
+  # GitHub Actions Configuration
+  RUNNER_OS: ubuntu-latest
+  NODE_VERSION: '20'
+  CHECKOUT_VERSION: v4
+  SETUP_NODE_VERSION: v4
+  GITHUB_SCRIPT_VERSION: v7
+  
+  # Tool Versions
+  VERCEL_CLI_VERSION: latest
+  SUPABASE_CLI_VERSION: latest
+  
+  # Vercel Configuration
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  
+  # Supabase Configuration
   SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-  # Supabase Database Configuration
+  SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+  SUPABASE_DB_HOST: aws-1-ap-northeast-2.pooler.supabase.com
+  SUPABASE_DB_PORT: 5432
+  SUPABASE_DB_NAME: postgres
+  
+  # Database Configuration
   DATABASE_TYPE: supabase
-  DATABASE_URL: postgresql://postgres:${{ secrets.SUPABASE_DB_PASSWORD }}@db.${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co:5432/postgres
-
+  DATABASE_URL: postgresql://postgres.${{ secrets.SUPABASE_PROJECT_ID }}:${{ secrets.SUPABASE_DB_PASSWORD }}@${{ env.SUPABASE_DB_HOST }}:${{ env.SUPABASE_DB_PORT }}/${{ env.SUPABASE_DB_NAME }}
+  
 jobs:
   # Check if CI was successful and determine what to deploy
   check-ci-status:
     name: Check CI Status
-    runs-on: ubuntu-latest
+    runs-on: ${{ env.RUNNER_OS }}
     if: |
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
@@ -46,7 +66,7 @@ jobs:
       pr_number: ${{ steps.check.outputs.pr_number }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@${{ env.CHECKOUT_VERSION }}
 
       - name: Determine deployment type
         id: check
@@ -83,7 +103,7 @@ jobs:
   # Run Supabase migrations first (only on main branch pushes, not PRs)
   supabase-migrate:
     name: Supabase Migrations
-    runs-on: ubuntu-latest
+    runs-on: ${{ env.RUNNER_OS }}
     needs: [check-ci-status]
     if: |
       needs.check-ci-status.outputs.is_pr == 'false' &&
@@ -92,18 +112,18 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@${{ env.CHECKOUT_VERSION }}
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: ${{ env.SUPABASE_CLI_VERSION }}
 
       - name: Link Supabase project
-        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
 
       - name: Run database migrations
-        run: supabase db push --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
+        run: supabase db push --password "$SUPABASE_DB_PASSWORD"
 
       - name: Verify migration status
         run: supabase migration list
@@ -111,7 +131,7 @@ jobs:
   # Deploy preview for pull requests
   deploy-preview:
     name: Deploy Preview
-    runs-on: ubuntu-latest
+    runs-on: ${{ env.RUNNER_OS }}
     needs: [check-ci-status]
     if: |
       needs.check-ci-status.outputs.is_pr == 'true' &&
@@ -124,27 +144,26 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@${{ env.CHECKOUT_VERSION }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@${{ env.SETUP_NODE_VERSION }}
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install Vercel CLI
-        run: npm install -g vercel@latest
+        run: npm install -g vercel@${{ env.VERCEL_CLI_VERSION }}
 
       - name: Configure Vercel Environment Variables
         run: |
           # Set DATABASE_TYPE environment variable
-          echo "Setting DATABASE_TYPE environment variable to 'supabase'..."
-          vercel env add DATABASE_TYPE preview --token "$VERCEL_TOKEN" <<< "supabase" || true
+          echo "Setting DATABASE_TYPE environment variable to '$DATABASE_TYPE'..."
+          vercel env add DATABASE_TYPE preview --token "$VERCEL_TOKEN" <<< "$DATABASE_TYPE" || true
           
-          # Set DATABASE_URL environment variable (constructed from Supabase details)
+          # Set DATABASE_URL environment variable (using env var from top of file)
           echo "Setting DATABASE_URL environment variable..."
-          DATABASE_CONNECTION_STRING="postgresql://postgres:${{ secrets.SUPABASE_DB_PASSWORD }}@db.${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co:5432/postgres"
-          vercel env add DATABASE_URL preview --token "$VERCEL_TOKEN" <<< "$DATABASE_CONNECTION_STRING" || true
+          vercel env add DATABASE_URL preview --token "$VERCEL_TOKEN" <<< "$DATABASE_URL" || true
           
           echo "Environment variables configured successfully"
 
@@ -162,7 +181,7 @@ jobs:
 
       - name: Comment PR with preview URL
         if: success() && needs.check-ci-status.outputs.pr_number != ''
-        uses: actions/github-script@v7
+        uses: actions/github-script@${{ env.GITHUB_SCRIPT_VERSION }}
         with:
           script: |
             github.rest.issues.createComment({
@@ -175,7 +194,7 @@ jobs:
   # Deploy production for main branch
   deploy-production:
     name: Deploy Production
-    runs-on: ubuntu-latest
+    runs-on: ${{ env.RUNNER_OS }}
     needs: [check-ci-status, supabase-migrate]
     if: |
       always() &&
@@ -190,27 +209,26 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@${{ env.CHECKOUT_VERSION }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@${{ env.SETUP_NODE_VERSION }}
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install Vercel CLI
-        run: npm install -g vercel@latest
+        run: npm install -g vercel@${{ env.VERCEL_CLI_VERSION }}
         
       - name: Configure Vercel Environment Variables
         run: |
           # Set DATABASE_TYPE environment variable
-          echo "Setting DATABASE_TYPE environment variable to 'supabase'..."
-          vercel env add DATABASE_TYPE production --token "$VERCEL_TOKEN" <<< "supabase" || true
+          echo "Setting DATABASE_TYPE environment variable to '$DATABASE_TYPE'..."
+          vercel env add DATABASE_TYPE production --token "$VERCEL_TOKEN" <<< "$DATABASE_TYPE" || true
           
-          # Set DATABASE_URL environment variable (constructed from Supabase details)
+          # Set DATABASE_URL environment variable (using env var from top of file)
           echo "Setting DATABASE_URL environment variable..."
-          DATABASE_CONNECTION_STRING="postgresql://postgres:${{ secrets.SUPABASE_DB_PASSWORD }}@db.${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co:5432/postgres"
-          vercel env add DATABASE_URL production --token "$VERCEL_TOKEN" <<< "$DATABASE_CONNECTION_STRING" || true
+          vercel env add DATABASE_URL production --token "$VERCEL_TOKEN" <<< "$DATABASE_URL" || true
           
           echo "Environment variables configured successfully"
 
@@ -241,7 +259,7 @@ jobs:
   # Notify on deployment completion
   notify:
     name: Deployment Notification
-    runs-on: ubuntu-latest
+    runs-on: ${{ env.RUNNER_OS }}
     needs: [check-ci-status, supabase-migrate, deploy-preview, deploy-production]
     if: always()
 

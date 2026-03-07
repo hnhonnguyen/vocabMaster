@@ -11,19 +11,32 @@ on:
     branches: [main, develop]
 
 env:
+  # GitHub Actions Configuration
+  RUNNER_OS: ubuntu-latest
   NODE_VERSION: '20'
+  CHECKOUT_VERSION: v4
+  SETUP_NODE_VERSION: v4
+  UPLOAD_ARTIFACT_VERSION: v4
+  
+  # Build Configuration
+  ARTIFACT_RETENTION_DAYS: 1
+  BUILD_ARTIFACT_NAME: nextjs-build
+  
+  # Mock Database Configuration (for build verification)
+  MOCK_DATABASE_TYPE: supabase
+  MOCK_DATABASE_URL: postgresql://mock:mock@localhost:5432/mock
 
 jobs:
   lint-and-typecheck:
     name: Lint & Type Check
-    runs-on: ubuntu-latest
+    runs-on: ${{ env.RUNNER_OS }}
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@${{ env.CHECKOUT_VERSION }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@${{ env.SETUP_NODE_VERSION }}
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -39,20 +52,20 @@ jobs:
 
   build:
     name: Build Application
-    runs-on: ubuntu-latest
+    runs-on: ${{ env.RUNNER_OS }}
     needs: lint-and-typecheck
     
     env:
       # Mock environment variables for build verification
-      DATABASE_TYPE: supabase
-      DATABASE_URL: postgresql://mock:mock@localhost:5432/mock
+      DATABASE_TYPE: ${{ env.MOCK_DATABASE_TYPE }}
+      DATABASE_URL: ${{ env.MOCK_DATABASE_URL }}
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@${{ env.CHECKOUT_VERSION }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@${{ env.SETUP_NODE_VERSION }}
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -64,26 +77,26 @@ jobs:
         run: npm run build
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@${{ env.UPLOAD_ARTIFACT_VERSION }}
         if: success()
         with:
-          name: nextjs-build
+          name: ${{ env.BUILD_ARTIFACT_NAME }}
           path: .next/
-          retention-days: 1
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
           if-no-files-found: ignore
 
   # Optional: Add test job when tests are implemented
   # test:
   #   name: Run Tests
-  #   runs-on: ubuntu-latest
+  #   runs-on: ${{ env.RUNNER_OS }}
   #   needs: lint-and-typecheck
     
   #   steps:
   #     - name: Checkout repository
-  #       uses: actions/checkout@v4
+  #       uses: actions/checkout@${{ env.CHECKOUT_VERSION }}
   
   #     - name: Setup Node.js
-  #       uses: actions/setup-node@v4
+  #       uses: actions/setup-node@${{ env.SETUP_NODE_VERSION }}
   #       with:
   #         node-version: ${{ env.NODE_VERSION }}
   #         cache: 'npm'
