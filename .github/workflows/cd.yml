@@ -36,7 +36,7 @@ env:
   
   # Database Configuration
   DATABASE_TYPE: supabase
-  DATABASE_URL: postgresql://postgres.${{ secrets.SUPABASE_PROJECT_ID }}:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres
+  DATABASE_URL: postgresql://postgres.${{ secrets.SUPABASE_PROJECT_ID }}:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true
   
 jobs:
   # Check if CI was successful and determine what to deploy
