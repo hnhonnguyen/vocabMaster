@@ -143,13 +143,15 @@ jobs:
 
       - name: Configure Vercel Environment Variables
         run: |
-          # Set DATABASE_TYPE environment variable
-          echo "Setting DATABASE_TYPE environment variable to '$DATABASE_TYPE'..."
-          vercel env add DATABASE_TYPE preview --token "$VERCEL_TOKEN" <<< "$DATABASE_TYPE" || true
+          # Remove and re-add DATABASE_TYPE environment variable
+          echo "Updating DATABASE_TYPE environment variable to '$DATABASE_TYPE'..."
+          vercel env rm DATABASE_TYPE preview --token "$VERCEL_TOKEN" --yes || true
+          echo "$DATABASE_TYPE" | vercel env add DATABASE_TYPE preview --token "$VERCEL_TOKEN"
           
-          # Set DATABASE_URL environment variable (using env var from top of file)
-          echo "Setting DATABASE_URL environment variable..."
-          vercel env add DATABASE_URL preview --token "$VERCEL_TOKEN" <<< "$DATABASE_URL" || true
+          # Remove and re-add DATABASE_URL environment variable (using env var from top of file)
+          echo "Updating DATABASE_URL environment variable..."
+          vercel env rm DATABASE_URL preview --token "$VERCEL_TOKEN" --yes || true
+          echo "$DATABASE_URL" | vercel env add DATABASE_URL preview --token "$VERCEL_TOKEN"
           
           echo "Environment variables configured successfully"
 
@@ -208,13 +210,15 @@ jobs:
         
       - name: Configure Vercel Environment Variables
         run: |
-          # Set DATABASE_TYPE environment variable
-          echo "Setting DATABASE_TYPE environment variable to '$DATABASE_TYPE'..."
-          vercel env add DATABASE_TYPE production --token "$VERCEL_TOKEN" <<< "$DATABASE_TYPE" || true
+          # Remove and re-add DATABASE_TYPE environment variable
+          echo "Updating DATABASE_TYPE environment variable to '$DATABASE_TYPE'..."
+          vercel env rm DATABASE_TYPE production --token "$VERCEL_TOKEN" --yes || true
+          echo "$DATABASE_TYPE" | vercel env add DATABASE_TYPE production --token "$VERCEL_TOKEN"
           
-          # Set DATABASE_URL environment variable (using env var from top of file)
-          echo "Setting DATABASE_URL environment variable..."
-          vercel env add DATABASE_URL production --token "$VERCEL_TOKEN" <<< "$DATABASE_URL" || true
+          # Remove and re-add DATABASE_URL environment variable (using env var from top of file)
+          echo "Updating DATABASE_URL environment variable..."
+          vercel env rm DATABASE_URL production --token "$VERCEL_TOKEN" --yes || true
+          echo "$DATABASE_URL" | vercel env add DATABASE_URL production --token "$VERCEL_TOKEN"
           
           echo "Environment variables configured successfully"
 
