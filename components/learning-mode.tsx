@@ -11,6 +11,7 @@ import { VocabWord } from "@/lib/types"
 import { generateQuestion, generateQuestionAsync, evaluateAnswer, evaluateAnswerAsync, getQualityFeedback } from "@/lib/question-generator"
 import { isAIConfigured } from "@/lib/config"
 import { calculateNextReview } from "@/lib/spaced-repetition"
+import { SpeakButton } from "@/components/speak-button"
 
 interface LearningModeProps {
   words: VocabWord[]
@@ -191,8 +192,9 @@ export function LearningMode({ words, onUpdateWord, onComplete, onExit }: Learni
       <Card className="overflow-hidden">
         <CardHeader className="gradient-primary text-primary-foreground py-3 sm:py-6">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <CardTitle className="text-base sm:text-lg">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
               Word: <span className="font-bold">{currentWord.word}</span>
+              <SpeakButton text={currentWord.word} className="h-7 w-7 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10" />
             </CardTitle>
             <Badge variant="secondary" className="bg-primary-foreground/20 text-primary-foreground border-0 text-xs sm:text-sm px-2 py-0.5">
               {currentWord.partOfSpeech}
@@ -357,7 +359,10 @@ export function LearningMode({ words, onUpdateWord, onComplete, onExit }: Learni
               {/* Example */}
               {currentWord.example && (
                 <div className="p-2.5 sm:p-3 rounded-lg bg-primary/5 border border-primary/10">
-                  <p className="text-xs font-medium text-primary mb-1">Example usage:</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-medium text-primary">Example usage:</p>
+                    <SpeakButton text={currentWord.example} className="h-6 w-6" />
+                  </div>
                   <p className="text-xs sm:text-sm italic">&ldquo;{currentWord.example}&rdquo;</p>
                 </div>
               )}

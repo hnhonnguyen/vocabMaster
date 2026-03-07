@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { VocabWord } from "@/lib/types"
 import { calculateMastery } from "@/lib/spaced-repetition"
+import { SpeakButton } from "@/components/speak-button"
 
 interface WordListProps {
   words: VocabWord[]
@@ -72,6 +73,7 @@ function WordCard({ word, onDelete, style }: WordCardProps) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
               <h3 className="font-semibold text-base sm:text-lg truncate">{word.word}</h3>
+              <SpeakButton text={word.word} className="h-6 w-6 sm:h-7 sm:w-7" />
               <Badge variant="outline" className="text-xs shrink-0 px-1.5 py-0.5">
                 {word.partOfSpeech}
               </Badge>
@@ -89,9 +91,12 @@ function WordCard({ word, onDelete, style }: WordCardProps) {
         </div>
         
         {word.example && (
-          <p className="text-xs text-muted-foreground italic mb-2 sm:mb-3 line-clamp-2">
-            &ldquo;{word.example}&rdquo;
-          </p>
+          <div className="flex items-start gap-1 mb-2 sm:mb-3">
+            <p className="text-xs text-muted-foreground italic line-clamp-2 flex-1">
+              &ldquo;{word.example}&rdquo;
+            </p>
+            <SpeakButton text={word.example} className="h-6 w-6 mt-0.5 shrink-0" />
+          </div>
         )}
         
         <div className="space-y-2">
