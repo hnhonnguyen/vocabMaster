@@ -28,9 +28,9 @@ env:
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
   SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-  # Vercel Environment Variables (configured automatically during deployment)
-  DATABASE_TYPE: ${{ secrets.DATABASE_TYPE }}
-  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  # Supabase Database Configuration
+  DATABASE_TYPE: supabase
+  DATABASE_URL: postgresql://postgres:${{ secrets.SUPABASE_DB_PASSWORD }}@db.${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co:5432/postgres
 
 jobs:
   # Check if CI was successful and determine what to deploy
@@ -138,12 +138,13 @@ jobs:
       - name: Configure Vercel Environment Variables
         run: |
           # Set DATABASE_TYPE environment variable
-          echo "Setting DATABASE_TYPE environment variable..."
-          vercel env add DATABASE_TYPE preview --token "$VERCEL_TOKEN" <<< "$DATABASE_TYPE" || true
+          echo "Setting DATABASE_TYPE environment variable to 'supabase'..."
+          vercel env add DATABASE_TYPE preview --token "$VERCEL_TOKEN" <<< "supabase" || true
           
-          # Set DATABASE_URL environment variable
+          # Set DATABASE_URL environment variable (constructed from Supabase details)
           echo "Setting DATABASE_URL environment variable..."
-          vercel env add DATABASE_URL preview --token "$VERCEL_TOKEN" <<< "$DATABASE_URL" || true
+          DATABASE_CONNECTION_STRING="postgresql://postgres:${{ secrets.SUPABASE_DB_PASSWORD }}@db.${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co:5432/postgres"
+          vercel env add DATABASE_URL preview --token "$VERCEL_TOKEN" <<< "$DATABASE_CONNECTION_STRING" || true
           
           echo "Environment variables configured successfully"
 
@@ -203,12 +204,13 @@ jobs:
       - name: Configure Vercel Environment Variables
         run: |
           # Set DATABASE_TYPE environment variable
-          echo "Setting DATABASE_TYPE environment variable..."
-          vercel env add DATABASE_TYPE preview --token "$VERCEL_TOKEN" <<< "$DATABASE_TYPE" || true
+          echo "Setting DATABASE_TYPE environment variable to 'supabase'..."
+          vercel env add DATABASE_TYPE production --token "$VERCEL_TOKEN" <<< "supabase" || true
           
-          # Set DATABASE_URL environment variable
+          # Set DATABASE_URL environment variable (constructed from Supabase details)
           echo "Setting DATABASE_URL environment variable..."
-          vercel env add DATABASE_URL preview --token "$VERCEL_TOKEN" <<< "$DATABASE_URL" || true
+          DATABASE_CONNECTION_STRING="postgresql://postgres:${{ secrets.SUPABASE_DB_PASSWORD }}@db.${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co:5432/postgres"
+          vercel env add DATABASE_URL production --token "$VERCEL_TOKEN" <<< "$DATABASE_CONNECTION_STRING" || true
           
           echo "Environment variables configured successfully"
 
