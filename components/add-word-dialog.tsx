@@ -227,21 +227,29 @@ export function AddWordDialog({ open, onOpenChange, onAddWord }: AddWordDialogPr
             <label htmlFor="partOfSpeech" className="text-sm font-medium">
               Part of Speech
             </label>
-            <select
+            <input
               id="partOfSpeech"
+              list="pos-options"
               value={partOfSpeech}
               onChange={(e) => setPartOfSpeech(e.target.value)}
+              placeholder="Select or type a part of speech"
               className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <option value="noun">Noun</option>
-              <option value="verb">Verb</option>
-              <option value="adjective">Adjective</option>
-              <option value="adverb">Adverb</option>
-              <option value="preposition">Preposition</option>
-              <option value="conjunction">Conjunction</option>
-              <option value="interjection">Interjection</option>
-              <option value="pronoun">Pronoun</option>
-            </select>
+            />
+            <datalist id="pos-options">
+              <option value="noun" />
+              <option value="verb" />
+              <option value="adjective" />
+              <option value="adverb" />
+              <option value="preposition" />
+              <option value="conjunction" />
+              <option value="interjection" />
+              <option value="pronoun" />
+              <option value="article" />
+              <option value="determiner" />
+              <option value="exclamation" />
+              <option value="phrase" />
+              <option value="abbreviation" />
+            </datalist>
           </div>
 
           {/* Definition */}

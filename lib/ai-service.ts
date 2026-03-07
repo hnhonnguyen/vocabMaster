@@ -82,8 +82,10 @@ export async function aiLookupWord(word: string): Promise<{
     const result = await chatCompletion([
       {
         role: 'system',
-        content: `You are a dictionary API. Return JSON only, no markdown. Format:
-[{"partOfSpeech":"...","definition":"...","example":"...","synonyms":["..."]}]
+        content: `You are a bilingual English-Vietnamese dictionary API. Return JSON only, no markdown. Format:
+[{"partOfSpeech":"...","definition":"English meaning / Vietnamese meaning","example":"...","synonyms":["..."]}]
+Each definition field must contain the English meaning followed by " / " and then its Vietnamese translation.
+For example: "lasting for a very short time / tồn tại trong thời gian rất ngắn"
 Provide 2-3 distinct definitions with examples.`
       },
       {
