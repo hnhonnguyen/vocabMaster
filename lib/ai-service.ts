@@ -121,18 +121,22 @@ export async function aiGenerateQuestion(word: VocabWord): Promise<Question | nu
     const result = await chatCompletion([
       {
         role: 'system',
-        content: `You are a vocabulary and grammar tutor. Generate a creative question that tests BOTH vocabulary understanding AND a specific grammar structure.
+        content: `You are a vocabulary and grammar tutor. Generate a creative question that supports BOTH vocabulary learning AND grammar learning.
 
 Return JSON only, no markdown. Format:
-{"type":"fill-blank"|"context-usage"|"definition"|"synonym","prompt":"...","hint":"...","grammarStructure":"...","grammarExample":"..."}
+{"type":"fill-blank"|"context-usage"|"definition"|"synonym"|"grammar-focus","learningFocus":"vocabulary"|"grammar","prompt":"...","hint":"...","grammarStructure":"...","grammarExample":"..."}
 
-Rules:
+Question types and their focus:
+- "fill-blank", "context-usage", "definition", "synonym" — vocabulary-focused questions that also reinforce a grammar structure (learningFocus: "vocabulary")
+- "grammar-focus" — grammar-focused questions where practicing the required grammar structure is the PRIMARY goal, and the target word provides the context (learningFocus: "grammar")
+
+Rules for ALL questions:
 - The question MUST require the student to use the target word in their answer.
-- The question MUST require using a specific English grammar structure (e.g., conditional sentences, passive voice, relative clauses, present perfect, reported speech, comparatives/superlatives, wish clauses, modal verbs, gerunds/infinitives, etc.).
+- The question MUST specify a particular English grammar structure (e.g., conditional sentences, passive voice, relative clauses, present perfect, reported speech, comparatives/superlatives, wish clauses, modal verbs, gerunds/infinitives, etc.).
 - "grammarStructure" must contain the grammar formula/form, e.g. "Conditional Type 2: If + past simple, would + base verb" or "Passive Voice: Subject + be + past participle".
 - "grammarExample" must contain a concrete example sentence applying that grammar structure with the target word, e.g. "If I were more eloquent, I would persuade anyone easily."
-- "hint" should combine a brief vocabulary reminder with the grammar requirement.
-- Vary both question styles AND grammar structures across questions.`
+- "hint" should reflect the learning focus: for vocabulary questions hint at the word meaning AND the grammar structure; for grammar questions hint at the grammar rule first, then remind the student to include the word.
+- Vary both question styles AND grammar structures AND learning focus across questions. Roughly half the questions should be grammar-focused.`
       },
       {
         role: 'user',
@@ -141,7 +145,7 @@ Part of speech: ${word.partOfSpeech}
 Definition: ${word.definition}
 Example: ${word.example || 'N/A'}
 
-Generate a question that tests understanding of this word using a specific grammar structure.`
+Generate a question that supports learning this vocabulary word AND practising English grammar.`
       }
     ], { temperature: 0.9 });
 
@@ -150,6 +154,7 @@ Generate a question that tests understanding of this word using a specific gramm
 
     return {
       type: parsed.type || 'context-usage',
+      learningFocus: parsed.learningFocus === 'grammar' ? 'grammar' : 'vocabulary',
       prompt: parsed.prompt,
       targetWord: word.word,
       hint: parsed.hint,
@@ -173,12 +178,27 @@ export async function aiEvaluateAnswer(
     ? `\nRequired grammar structure: ${question.grammarStructure}`
     : '';
 
+  const isGrammarFocus = question.learningFocus === 'grammar';
+
   try {
     const result = await chatCompletion([
       {
         role: 'system',
         content: `You are a vocabulary and grammar tutor evaluating a student's answer. Return JSON only, no markdown.
 Format: {"quality": <0-5>, "feedback": "..."}
+${isGrammarFocus
+  ? `This is a GRAMMAR-FOCUSED question. Grammar correctness is the PRIMARY criterion.
+Scoring:
+- 5: Grammar structure used perfectly AND target word included correctly
+- 4: Grammar structure mostly correct with minor issues, target word used
+- 3: Grammar structure attempted but imperfect, target word present
+- 2: Target word used but grammar structure missing or severely wrong
+- 1: Target word included but both grammar and sentence are incorrect
+- 0: Target word missing or answer is incomprehensible
+
+The answer MUST include the target word "${word.word}" to score 2+.${grammarContext ? '\n' + grammarContext + ' — correct use of this structure is required to score 4+.' : ''}
+Be encouraging but honest. Keep feedback under 2 sentences. Focus primarily on grammar correctness in your feedback.`
+  : `This is a VOCABULARY-FOCUSED question. Vocabulary understanding is the PRIMARY criterion.
 Scoring:
 - 5: Perfect use of the word AND correct grammar structure
 - 4: Good use of word and grammar, minor issues
@@ -189,6 +209,7 @@ Scoring:
 
 The answer MUST include the target word "${word.word}" to score 3+.${grammarContext ? '\n' + grammarContext + ' — the answer should follow this structure to score 4+.' : ''}
 Be encouraging but honest. Keep feedback under 2 sentences. If grammar structure was required, mention whether it was used correctly.`
+}`
       },
       {
         role: 'user',

@@ -20,7 +20,7 @@ export interface ReviewResult {
 }
 
 export interface Question {
-  type: 'fill-blank' | 'context-usage' | 'definition' | 'synonym';
+  type: 'fill-blank' | 'context-usage' | 'definition' | 'synonym' | 'grammar-focus';
   prompt: string;
   targetWord: string;
   hint?: string;
@@ -28,6 +28,12 @@ export interface Question {
   grammarStructure?: string;
   /** Concrete example applying the grammar structure with the target word */
   grammarExample?: string;
+  /**
+   * Primary learning focus for this question.
+   * - "vocabulary": the main goal is to demonstrate understanding of the target word
+   * - "grammar": the main goal is to practice the required grammar structure using the target word as context
+   */
+  learningFocus?: 'vocabulary' | 'grammar';
 }
 
 export interface LearningSession {

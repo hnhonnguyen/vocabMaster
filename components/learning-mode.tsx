@@ -204,7 +204,7 @@ export function LearningMode({ words, onUpdateWord, onComplete, onExit }: Learni
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground">
               <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
-              AI Question
+              {question.learningFocus === 'grammar' ? 'Grammar Practice' : 'AI Question'}
             </div>
             <p className="text-base sm:text-lg">{question.prompt}</p>
           </div>
@@ -214,7 +214,7 @@ export function LearningMode({ words, onUpdateWord, onComplete, onExit }: Learni
             <div className="p-2.5 sm:p-3 rounded-lg bg-accent/5 border border-accent/15 space-y-1.5 sm:space-y-2">
               <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-semibold text-accent">
                 <BookOpenText className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                Required Grammar
+                {question.learningFocus === 'grammar' ? 'Grammar Focus' : 'Required Grammar'}
               </div>
               <p className="text-xs sm:text-sm font-medium">{question.grammarStructure}</p>
               {question.grammarExample && (

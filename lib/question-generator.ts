@@ -22,6 +22,12 @@ const questionTemplates = {
     "'{word}' means '{definition}'. Use this word in a new sentence following the required grammar structure.",
     "Given that '{word}' means '{definition}', write a sentence using the specified grammar pattern.",
   ],
+  grammarFocus: [
+    "Practice the {grammarName} by writing a sentence that includes the word '{word}'. Follow the pattern: {structure}",
+    "Using the {grammarName} pattern ({structure}), write a sentence that naturally incorporates '{word}'.",
+    "Demonstrate the {grammarName} structure by creating a sentence about '{word}' (meaning: {definition}). Pattern: {structure}",
+    "Apply the {grammarName} rule to write one sentence that uses '{word}'. Required pattern: {structure}",
+  ],
 };
 
 const contextTopics = [
@@ -117,7 +123,7 @@ export function generateQuestion(word: VocabWord): Question {
 
 // Template-based question generation (no API needed)
 function generateQuestionLocal(word: VocabWord): Question {
-  const questionTypes: Question['type'][] = ['fill-blank', 'context-usage', 'definition', 'synonym'];
+  const questionTypes: Question['type'][] = ['fill-blank', 'context-usage', 'definition', 'synonym', 'grammar-focus'];
   const type = questionTypes[Math.floor(Math.random() * questionTypes.length)];
   const grammar = grammarStructures[Math.floor(Math.random() * grammarStructures.length)];
 
@@ -125,6 +131,7 @@ function generateQuestionLocal(word: VocabWord): Question {
   let hint: string | undefined;
   const grammarStructure = `${grammar.name}: ${grammar.structure}`;
   const grammarExample = grammar.makeExample(word.word);
+  const learningFocus: Question['learningFocus'] = type === 'grammar-focus' ? 'grammar' : 'vocabulary';
 
   switch (type) {
     case 'fill-blank':
@@ -162,12 +169,22 @@ function generateQuestionLocal(word: VocabWord): Question {
       hint = `Apply the grammar structure: ${grammarStructure}`;
       break;
 
+    case 'grammar-focus':
+      const grammarTemplates = questionTemplates.grammarFocus;
+      prompt = grammarTemplates[Math.floor(Math.random() * grammarTemplates.length)]
+        .replace('{grammarName}', grammar.name)
+        .replace('{structure}', grammar.structure)
+        .replace('{word}', word.word)
+        .replace('{definition}', word.definition);
+      hint = `Focus on the grammar pattern: ${grammar.structure}. Include the word "${word.word}" (${word.definition}) in your answer.`;
+      break;
+
     default:
       prompt = `Use the word "${word.word}" in a sentence that demonstrates you understand its meaning. Follow the required grammar structure.`;
       hint = `Use: ${grammarStructure}`;
   }
 
-  return { type, prompt, targetWord: word.word, hint, grammarStructure, grammarExample };
+  return { type, learningFocus, prompt, targetWord: word.word, hint, grammarStructure, grammarExample };
 }
 
 // Evaluate answer - uses AI when configured, falls back to heuristic
