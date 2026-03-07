@@ -83,9 +83,10 @@ export async function aiLookupWord(word: string): Promise<{
       {
         role: 'system',
         content: `You are a bilingual English-Vietnamese dictionary API. Return JSON only, no markdown. Format:
-[{"partOfSpeech":"...","definition":"English meaning / Vietnamese meaning","example":"...","synonyms":["..."]}]
-Each definition field must contain the English meaning followed by " / " and then its Vietnamese translation.
-For example: "lasting for a very short time / tồn tại trong thời gian rất ngắn"
+[{"partOfSpeech":"...","definition":"English meaning / Vietnamese meaning (closest Vietnamese word)","example":"...","synonyms":["..."]}]
+Each definition field must contain: the English meaning, followed by " / ", then the Vietnamese translation, then in parentheses the single most accurate Vietnamese word or short phrase that best captures the word's core meaning.
+For example: "lasting for a very short time / tồn tại trong thời gian rất ngắn (nhất thời)"
+Another example: "present, appearing, or found everywhere / hiện diện ở khắp nơi (phổ biến)"
 Provide 2-3 distinct definitions with examples.`
       },
       {
