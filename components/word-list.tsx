@@ -1,13 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { BookOpen, Trash2, Clock, Award } from "lucide-react"
+import { BookOpen, Trash2, Clock, Award, Volume2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { VocabWord } from "@/lib/types"
 import { calculateMastery } from "@/lib/spaced-repetition"
+import { speakText } from "@/lib/tts-service"
 
 interface WordListProps {
   words: VocabWord[]
@@ -48,6 +49,18 @@ interface WordCardProps {
 function WordCard({ word, onDelete, style }: WordCardProps) {
   const mastery = calculateMastery(word)
   const isDue = new Date(word.nextReviewDate) <= new Date()
+  const [isSpeaking, setIsSpeaking] = React.useState(false)
+
+  const handleSpeak = async (text: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (isSpeaking) return
+    setIsSpeaking(true)
+    try {
+      await speakText(text)
+    } finally {
+      setIsSpeaking(false)
+    }
+  }
   
   const getMasteryColor = (mastery: number) => {
     if (mastery >= 80) return 'success'
@@ -75,6 +88,16 @@ function WordCard({ word, onDelete, style }: WordCardProps) {
               <Badge variant="outline" className="text-xs shrink-0 px-1.5 py-0.5">
                 {word.partOfSpeech}
               </Badge>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => handleSpeak(word.word, e)}
+                disabled={isSpeaking}
+                className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
+                title="Pronounce word"
+              >
+                <Volume2 className="w-3 h-3" />
+              </Button>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{word.definition}</p>
           </div>
@@ -89,9 +112,21 @@ function WordCard({ word, onDelete, style }: WordCardProps) {
         </div>
         
         {word.example && (
-          <p className="text-xs text-muted-foreground italic mb-2 sm:mb-3 line-clamp-2">
-            &ldquo;{word.example}&rdquo;
-          </p>
+          <div className="flex items-start gap-1 mb-2 sm:mb-3">
+            <p className="text-xs text-muted-foreground italic line-clamp-2 flex-1">
+              &ldquo;{word.example}&rdquo;
+            </p>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => handleSpeak(word.example!, e)}
+              disabled={isSpeaking}
+              className="h-5 w-5 shrink-0 text-muted-foreground hover:text-foreground mt-0.5"
+              title="Read example"
+            >
+              <Volume2 className="w-3 h-3" />
+            </Button>
+          </div>
         )}
         
         <div className="space-y-2">
