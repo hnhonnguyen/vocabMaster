@@ -7,6 +7,7 @@ export interface AIConfig {
   model: string;
   maxTokens: number;
   temperature: number;
+  googleApiKey: string;
 }
 
 const CONFIG_STORAGE_KEY = 'vocab-master-ai-config';
@@ -17,6 +18,7 @@ const DEFAULT_CONFIG: AIConfig = {
   model: '',
   maxTokens: 512,
   temperature: 0.7,
+  googleApiKey: '',
 };
 
 // Load config from localStorage
@@ -59,4 +61,10 @@ export function isAIConfigured(): boolean {
 export function resetAIConfig(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(CONFIG_STORAGE_KEY);
+}
+
+// Check if Google TTS is configured
+export function isGoogleTTSConfigured(): boolean {
+  const config = getAIConfig();
+  return !!config.googleApiKey && config.googleApiKey.trim().length > 0;
 }

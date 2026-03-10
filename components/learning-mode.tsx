@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ArrowRight, Lightbulb, CheckCircle2, XCircle, Sparkles, Loader2, BookOpenText, SkipForward, ThumbsUp, ThumbsDown } from "lucide-react"
+import { ArrowRight, Lightbulb, CheckCircle2, XCircle, Sparkles, Loader2, BookOpenText, SkipForward, ThumbsUp, ThumbsDown, Volume2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -11,6 +11,7 @@ import { VocabWord } from "@/lib/types"
 import { generateQuestion, generateQuestionAsync, evaluateAnswer, evaluateAnswerAsync, getQualityFeedback } from "@/lib/question-generator"
 import { isAIConfigured } from "@/lib/config"
 import { calculateNextReview } from "@/lib/spaced-repetition"
+import { speakText } from "@/lib/tts-service"
 
 interface LearningModeProps {
   words: VocabWord[]
@@ -53,9 +54,20 @@ export function LearningMode({ words, onUpdateWord, onComplete, onExit }: Learni
   const [showHint, setShowHint] = React.useState(false)
   const [isLoadingQuestion, setIsLoadingQuestion] = React.useState(false)
   const [isEvaluating, setIsEvaluating] = React.useState(false)
+  const [isSpeaking, setIsSpeaking] = React.useState(false)
   const [question, setQuestion] = React.useState(() => 
     sessionWords.current.length > 0 ? generateQuestion(sessionWords.current[0]) : null
   )
+
+  const handleSpeak = async (text: string) => {
+    if (isSpeaking) return
+    setIsSpeaking(true)
+    try {
+      await speakText(text)
+    } finally {
+      setIsSpeaking(false)
+    }
+  }
 
   // Try to load an AI-generated question on mount
   React.useEffect(() => {
@@ -191,9 +203,21 @@ export function LearningMode({ words, onUpdateWord, onComplete, onExit }: Learni
       <Card className="overflow-hidden">
         <CardHeader className="gradient-primary text-primary-foreground py-3 sm:py-6">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <CardTitle className="text-base sm:text-lg">
-              Word: <span className="font-bold">{currentWord.word}</span>
-            </CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base sm:text-lg">
+                Word: <span className="font-bold">{currentWord.word}</span>
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleSpeak(currentWord.word)}
+                disabled={isSpeaking}
+                className="h-7 w-7 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                title="Pronounce word"
+              >
+                <Volume2 className="w-4 h-4" />
+              </Button>
+            </div>
             <Badge variant="secondary" className="bg-primary-foreground/20 text-primary-foreground border-0 text-xs sm:text-sm px-2 py-0.5">
               {currentWord.partOfSpeech}
             </Badge>
@@ -357,7 +381,19 @@ export function LearningMode({ words, onUpdateWord, onComplete, onExit }: Learni
               {/* Example */}
               {currentWord.example && (
                 <div className="p-2.5 sm:p-3 rounded-lg bg-primary/5 border border-primary/10">
-                  <p className="text-xs font-medium text-primary mb-1">Example usage:</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-xs font-medium text-primary">Example usage:</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleSpeak(currentWord.example!)}
+                      disabled={isSpeaking}
+                      className="h-5 w-5 text-primary/70 hover:text-primary hover:bg-primary/10"
+                      title="Read example"
+                    >
+                      <Volume2 className="w-3 h-3" />
+                    </Button>
+                  </div>
                   <p className="text-xs sm:text-sm italic">&ldquo;{currentWord.example}&rdquo;</p>
                 </div>
               )}

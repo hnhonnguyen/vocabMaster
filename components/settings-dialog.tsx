@@ -1,13 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { Settings, Eye, EyeOff, Loader2, CheckCircle2, XCircle, RotateCcw } from "lucide-react"
+import { Settings, Eye, EyeOff, Loader2, CheckCircle2, XCircle, RotateCcw, Volume2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { getAIConfig, saveAIConfig, resetAIConfig, isAIConfigured, type AIConfig } from "@/lib/config"
+import { getAIConfig, saveAIConfig, resetAIConfig, isAIConfigured, isGoogleTTSConfigured, type AIConfig } from "@/lib/config"
 import { testConnection } from "@/lib/ai-service"
+import { speakText } from "@/lib/tts-service"
 
 interface SettingsDialogProps {
   open: boolean
@@ -17,8 +18,11 @@ interface SettingsDialogProps {
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [config, setConfig] = React.useState<AIConfig>(() => getAIConfig())
   const [showKey, setShowKey] = React.useState(false)
+  const [showGoogleKey, setShowGoogleKey] = React.useState(false)
   const [isTesting, setIsTesting] = React.useState(false)
+  const [isTestingTTS, setIsTestingTTS] = React.useState(false)
   const [testResult, setTestResult] = React.useState<{ success: boolean; error?: string } | null>(null)
+  const [ttsTestResult, setTtsTestResult] = React.useState<{ success: boolean; error?: string } | null>(null)
   const [saved, setSaved] = React.useState(false)
 
   // Reload config when dialog opens
@@ -27,6 +31,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       setConfig(getAIConfig())
       setTestResult(null)
       setSaved(false)
+      setTtsTestResult(null)
     }
   }, [open])
 
@@ -54,6 +59,22 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     resetAIConfig()
     setConfig(getAIConfig())
     setTestResult(null)
+    setTtsTestResult(null)
+  }
+
+  const handleTestTTS = async () => {
+    // Save first so the test uses current values
+    saveAIConfig(config)
+    setIsTestingTTS(true)
+    setTtsTestResult(null)
+    try {
+      await speakText('Hello! Text-to-speech is working correctly.')
+      setTtsTestResult({ success: true })
+    } catch (err: any) {
+      setTtsTestResult({ success: false, error: err?.message || 'TTS test failed' })
+    } finally {
+      setIsTestingTTS(false)
+    }
   }
 
   const handleChange = (field: keyof AIConfig, value: string | number) => {
@@ -64,6 +85,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   const maskedKey = config.apiKey
     ? `${config.apiKey.substring(0, 7)}${'*'.repeat(Math.max(0, config.apiKey.length - 11))}${config.apiKey.substring(config.apiKey.length - 4)}`
+    : ''
+
+  const maskedGoogleKey = config.googleApiKey
+    ? `${config.googleApiKey.substring(0, 7)}${'*'.repeat(Math.max(0, config.googleApiKey.length - 11))}${config.googleApiKey.substring(config.googleApiKey.length - 4)}`
     : ''
 
   return (
@@ -172,6 +197,76 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             </div>
           </div>
 
+          {/* Divider */}
+          <div className="border-t pt-2">
+            <div className="flex items-center gap-2 mb-3">
+              <Volume2 className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-semibold">Text-to-Speech (TTS)</span>
+              {isGoogleTTSConfigured() ? (
+                <Badge variant="success" className="text-xs">Google GenAI</Badge>
+              ) : (
+                <Badge variant="secondary" className="text-xs">Browser built-in</Badge>
+              )}
+            </div>
+
+            {/* Google API Key */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Google API Key</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type={showGoogleKey ? 'text' : 'password'}
+                    placeholder="AIzaSy..."
+                    value={showGoogleKey ? config.googleApiKey : maskedGoogleKey}
+                    onChange={(e) => {
+                      if (showGoogleKey) handleChange('googleApiKey', e.target.value)
+                      else {
+                        setShowGoogleKey(true)
+                        handleChange('googleApiKey', e.target.value)
+                      }
+                    }}
+                    onFocus={() => {
+                      if (!showGoogleKey) setShowGoogleKey(true)
+                    }}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowGoogleKey(!showGoogleKey)}
+                >
+                  {showGoogleKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Google AI Studio key for high-quality TTS. Leave blank to use the browser&apos;s built-in speech.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleTestTTS}
+                disabled={isTestingTTS}
+                className="gap-2"
+              >
+                {isTestingTTS
+                  ? <Loader2 className="w-3 h-3 animate-spin" />
+                  : ttsTestResult?.success
+                  ? <CheckCircle2 className="w-3 h-3 text-success" />
+                  : ttsTestResult && !ttsTestResult.success
+                  ? <XCircle className="w-3 h-3 text-destructive" />
+                  : <Volume2 className="w-3 h-3" />}
+                Test TTS
+              </Button>
+              {ttsTestResult && (
+                <p className={`text-xs mt-1 ${ttsTestResult.success ? 'text-success' : 'text-destructive'}`}>
+                  {ttsTestResult.success ? 'TTS is working!' : (ttsTestResult.error || 'TTS test failed')}
+                </p>
+              )}
+            </div>
+          </div>
+
           {/* Test result */}
           {testResult && (
             <div className={`p-3 rounded-lg border text-sm animate-slide-up ${
@@ -239,6 +334,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               <li>Questions are dynamically generated by AI</li>
               <li>Answer evaluation uses AI for nuanced feedback</li>
               <li>Falls back to built-in mode if API call fails</li>
+            </ul>
+            <p className="font-medium mt-2">Text-to-Speech:</p>
+            <ul className="list-disc list-inside space-y-0.5 ml-1">
+              <li>With Google API key: high-quality neural TTS (Google GenAI)</li>
+              <li>Without key: browser built-in speech synthesis (free)</li>
             </ul>
           </div>
         </div>
