@@ -166,7 +166,7 @@ export async function aiEvaluateAnswer(
   answer: string,
   word: VocabWord,
   question: Question
-): Promise<{ quality: number; feedback: string } | null> {
+): Promise<{ quality: number; feedback: string; correctedAnswer?: string } | null> {
   if (!isAIConfigured()) return null;
 
   const grammarContext = question.grammarStructure
@@ -178,7 +178,7 @@ export async function aiEvaluateAnswer(
       {
         role: 'system',
         content: `You are a vocabulary and grammar tutor evaluating a student's answer. Return JSON only, no markdown.
-Format: {"quality": <0-5>, "feedback": "..."}
+Format: {"quality": <0-5>, "feedback": "...", "correctedAnswer": "..."}
 Scoring:
 - 5: Perfect use of the word AND correct grammar structure
 - 4: Good use of word and grammar, minor issues
@@ -188,7 +188,8 @@ Scoring:
 - 0: Word missing or nonsensical
 
 The answer MUST include the target word "${word.word}" to score 3+.${grammarContext ? '\n' + grammarContext + ' — the answer should follow this structure to score 4+.' : ''}
-Be encouraging but honest. Keep feedback under 2 sentences. If grammar structure was required, mention whether it was used correctly.`
+Be encouraging but honest. Keep feedback under 2 sentences. If grammar structure was required, mention whether it was used correctly.
+For "correctedAnswer": if quality < 5, provide an improved version of the student's answer that fixes any vocabulary or grammar issues. If quality is 5, omit this field or set it to null.`
       },
       {
         role: 'user',
@@ -207,6 +208,7 @@ Evaluate this answer.`
     return {
       quality: Math.max(0, Math.min(5, Math.round(parsed.quality))),
       feedback: parsed.feedback || '',
+      correctedAnswer: parsed.correctedAnswer || undefined,
     };
   } catch {
     return null;
