@@ -250,11 +250,28 @@ export function LearningMode({ words, onUpdateWord, onComplete, onExit }: Learni
           )}
 
           {/* Hint */}
-          {!state.showFeedback && question.hint && (
+          {!state.showFeedback && (
             <div>
               {showHint ? (
-                <div className="p-2.5 sm:p-3 rounded-lg bg-muted/50 text-xs sm:text-sm">
-                  <span className="font-medium">Hint:</span> {question.hint}
+                <div className="p-2.5 sm:p-3 rounded-lg bg-muted/50 text-xs sm:text-sm space-y-1.5">
+                  {question.hint && (
+                    <div>
+                      <span className="font-medium">Hint:</span> {question.hint}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-medium">Part of speech:</span>
+                    <Badge variant="outline" className="text-xs px-1.5 py-0">{currentWord.partOfSpeech}</Badge>
+                  </div>
+                  <div>
+                    <span className="font-medium">Definition:</span> {currentWord.definition}
+                  </div>
+                  {currentWord.example && (
+                    <div>
+                      <span className="font-medium">Example:</span>{" "}
+                      <span className="italic">&ldquo;{currentWord.example}&rdquo;</span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Button 

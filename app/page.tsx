@@ -8,6 +8,7 @@ import { Dashboard } from "@/components/dashboard"
 import { WordList } from "@/components/word-list"
 import { LearningMode } from "@/components/learning-mode"
 import { AddWordDialog } from "@/components/add-word-dialog"
+import { EditWordDialog } from "@/components/edit-word-dialog"
 import { BulkImportDialog } from "@/components/bulk-import-dialog"
 import { SettingsDialog } from "@/components/settings-dialog"
 import { SessionComplete } from "@/components/session-complete"
@@ -32,6 +33,8 @@ export default function VocabApp() {
   const [showAddDialog, setShowAddDialog] = React.useState(false)
   const [showBulkImportDialog, setShowBulkImportDialog] = React.useState(false)
   const [showSettingsDialog, setShowSettingsDialog] = React.useState(false)
+  const [showEditDialog, setShowEditDialog] = React.useState(false)
+  const [editingWord, setEditingWord] = React.useState<VocabWord | null>(null)
   const [currentStreak, setCurrentStreak] = React.useState(0)
   const [longestStreak, setLongestStreak] = React.useState(0)
   const [sessionResult, setSessionResult] = React.useState({ correct: 0, total: 0 })
@@ -77,6 +80,11 @@ export default function VocabApp() {
     } catch (err) {
       console.error('Failed to delete word:', err)
     }
+  }
+
+  const handleOpenEditWord = (word: VocabWord) => {
+    setEditingWord(word)
+    setShowEditDialog(true)
   }
 
   const handleUpdateWord = async (wordId: string, updates: Partial<VocabWord>) => {
@@ -268,7 +276,7 @@ export default function VocabApp() {
                 </Button>
               </div>
             </div>
-            <WordList words={words} onDeleteWord={handleDeleteWord} />
+            <WordList words={words} onDeleteWord={handleDeleteWord} onEditWord={handleOpenEditWord} />
           </div>
         )}
 
@@ -300,6 +308,14 @@ export default function VocabApp() {
           <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground" />
         </button>
       )}
+
+      {/* Edit Word Dialog */}
+      <EditWordDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        word={editingWord}
+        onSave={handleUpdateWord}
+      />
 
       {/* Add Word Dialog */}
       <AddWordDialog
