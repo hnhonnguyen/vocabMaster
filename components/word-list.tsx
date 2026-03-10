@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { BookOpen, Trash2, Clock, Award, Volume2 } from "lucide-react"
+import { BookOpen, Trash2, Clock, Award, Volume2, Pencil } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,9 +13,10 @@ import { speakText } from "@/lib/tts-service"
 interface WordListProps {
   words: VocabWord[]
   onDeleteWord: (id: string) => void
+  onEditWord?: (word: VocabWord) => void
 }
 
-export function WordList({ words, onDeleteWord }: WordListProps) {
+export function WordList({ words, onDeleteWord, onEditWord }: WordListProps) {
   if (words.length === 0) {
     return (
       <div className="text-center py-8 sm:py-12">
@@ -33,6 +34,7 @@ export function WordList({ words, onDeleteWord }: WordListProps) {
           key={word.id} 
           word={word} 
           onDelete={() => onDeleteWord(word.id)}
+          onEdit={onEditWord ? () => onEditWord(word) : undefined}
           style={{ animationDelay: `${index * 50}ms` }}
         />
       ))}
@@ -43,10 +45,11 @@ export function WordList({ words, onDeleteWord }: WordListProps) {
 interface WordCardProps {
   word: VocabWord
   onDelete: () => void
+  onEdit?: () => void
   style?: React.CSSProperties
 }
 
-function WordCard({ word, onDelete, style }: WordCardProps) {
+function WordCard({ word, onDelete, onEdit, style }: WordCardProps) {
   const mastery = calculateMastery(word)
   const isDue = new Date(word.nextReviewDate) <= new Date()
   const [isSpeaking, setIsSpeaking] = React.useState(false)
@@ -101,14 +104,26 @@ function WordCard({ word, onDelete, style }: WordCardProps) {
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{word.definition}</p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onDelete}
-            className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 h-7 w-7 sm:h-8 sm:w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
-            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          </Button>
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onEdit}
+                className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+              >
+                <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onDelete}
+              className="h-7 w-7 sm:h-8 sm:w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </Button>
+          </div>
         </div>
         
         {word.example && (
