@@ -175,7 +175,7 @@ export async function evaluateAnswerAsync(
   answer: string,
   word: VocabWord,
   question: Question
-): Promise<{ quality: number; feedback: string }> {
+): Promise<{ quality: number; feedback: string; correctedAnswer?: string }> {
   if (isAIConfigured()) {
     try {
       const aiResult = await aiEvaluateAnswer(answer, word, question);

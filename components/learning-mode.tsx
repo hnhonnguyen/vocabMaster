@@ -26,6 +26,7 @@ interface ReviewState {
   showFeedback: boolean
   feedback: string
   quality: number
+  correctedAnswer: string | undefined
   completed: number
   correct: number
   skippedKnown: number
@@ -44,6 +45,7 @@ export function LearningMode({ words, onUpdateWord, onComplete, onExit }: Learni
     showFeedback: false,
     feedback: "",
     quality: 0,
+    correctedAnswer: undefined,
     completed: 0,
     correct: 0,
     skippedKnown: 0,
@@ -89,7 +91,7 @@ export function LearningMode({ words, onUpdateWord, onComplete, onExit }: Learni
     if (!currentWord || !question) return
 
     setIsEvaluating(true)
-    const { quality, feedback } = await evaluateAnswerAsync(state.answer, currentWord, question)
+    const { quality, feedback, correctedAnswer } = await evaluateAnswerAsync(state.answer, currentWord, question)
     setIsEvaluating(false)
     
     setState(prev => ({
@@ -97,6 +99,7 @@ export function LearningMode({ words, onUpdateWord, onComplete, onExit }: Learni
       showFeedback: true,
       feedback,
       quality,
+      correctedAnswer,
       correct: quality >= 3 ? prev.correct + 1 : prev.correct,
       lastAction: 'answer',
     }))
@@ -151,6 +154,7 @@ export function LearningMode({ words, onUpdateWord, onComplete, onExit }: Learni
       showFeedback: false,
       feedback: "",
       quality: 0,
+      correctedAnswer: undefined,
       completed: prev.completed + 1,
       lastAction: null,
     }))
@@ -375,6 +379,11 @@ export function LearningMode({ words, onUpdateWord, onComplete, onExit }: Learni
                       ? 'Needs Practice'
                       : `${qualityFeedback.emoji} ${qualityFeedback.message}`}
                   </span>
+                  {state.lastAction === 'answer' && (
+                    <span className="ml-auto text-xs sm:text-sm font-medium text-muted-foreground">
+                      Score: {state.quality}/5
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground">{state.feedback}</p>
               </div>
@@ -384,6 +393,14 @@ export function LearningMode({ words, onUpdateWord, onComplete, onExit }: Learni
                 <div className="p-2.5 sm:p-3 rounded-lg bg-muted/50">
                   <p className="text-xs font-medium text-muted-foreground mb-1">Your answer:</p>
                   <p className="text-xs sm:text-sm">{state.answer}</p>
+                </div>
+              )}
+
+              {/* Corrected Answer (only when AI provides one) */}
+              {state.lastAction === 'answer' && state.correctedAnswer && (
+                <div className="p-2.5 sm:p-3 rounded-lg bg-accent/10 border border-accent/20">
+                  <p className="text-xs font-medium text-accent mb-1">Suggested correction:</p>
+                  <p className="text-xs sm:text-sm italic">&ldquo;{state.correctedAnswer}&rdquo;</p>
                 </div>
               )}
 
