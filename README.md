@@ -1,5 +1,7 @@
 # VocabMaster
 
+[![gitcgr](https://gitcgr.com/badge/hnhonnguyen/vocabMaster.svg)](https://gitcgr.com/hnhonnguyen/vocabMaster)
+
 An AI-powered vocabulary learning application that uses the **SM-2 spaced repetition algorithm** to help you master English vocabulary efficiently. Built with Next.js 14, TypeScript, and Tailwind CSS, with flexible multi-database support and deployment options.
 
 ---
